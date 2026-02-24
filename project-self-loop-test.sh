@@ -17,14 +17,21 @@ if [[ ! -d "$PROJECT_ARG" ]]; then
 fi
 
 PROJECT_DIR="$(cd "$PROJECT_ARG" && pwd)"
+PROJECT_NAME="$(basename "$PROJECT_DIR")"
 
 if [[ ! -f "$PROJECT_DIR/specmatic.yaml" ]]; then
   echo "specmatic.yaml not found in $PROJECT_DIR" >&2
   exit 1
 fi
+cd "$PROJECT_DIR"
 
 init_specmatic_cmd
 init_colors
+
+if ! command -v yq >/dev/null 2>&1; then
+  echo "yq is required to parse specmatic.yaml" >&2
+  exit 1
+fi
 
 mock_pid=""
 compose_logs_pid=""
@@ -36,7 +43,7 @@ init_compose() {
   local candidate
 
   for candidate in "docker-compose.yaml" "docker-compose.yml" "compose.yaml" "compose.yml"; do
-    if [[ -f "${PROJECT_DIR}/${candidate}" ]]; then
+    if [[ -f "${candidate}" ]]; then
       compose_file="${candidate}"
       break
     fi
@@ -55,10 +62,7 @@ start_compose() {
   fi
 
   echo "${C_BLUE}Starting docker compose from ${PROJECT_DIR}/${compose_file}${C_RESET}"
-  if (
-    cd "${PROJECT_DIR}"
-    "${COMPOSE_CMD[@]}" -f "${compose_file}" up -d --build
-  ) 2>&1 | prefix_output "$C_YELLOW" "compose"; then
+  if "${COMPOSE_CMD[@]}" -f "${compose_file}" up -d --build 2>&1 | prefix_output "$C_YELLOW" "compose"; then
     compose_started="true"
   else
     echo "${C_RED}docker compose up failed${C_RESET}" >&2
@@ -71,10 +75,7 @@ stop_compose() {
     return
   fi
 
-  (
-    cd "${PROJECT_DIR}"
-    "${COMPOSE_CMD[@]}" -f "${compose_file}" down --remove-orphans
-  ) 2>&1 | prefix_output "$C_YELLOW" "compose" || true
+  "${COMPOSE_CMD[@]}" -f "${compose_file}" down --remove-orphans 2>&1 | prefix_output "$C_YELLOW" "compose" || true
 }
 
 start_compose_logs() {
@@ -82,10 +83,8 @@ start_compose_logs() {
     return
   fi
 
-  (
-    cd "${PROJECT_DIR}"
-    "${COMPOSE_CMD[@]}" -f "${compose_file}" logs -f --no-color
-  ) > >(prefix_output "$C_YELLOW" "compose-log") \
+  "${COMPOSE_CMD[@]}" -f "${compose_file}" logs -f --no-color \
+    > >(prefix_output "$C_YELLOW" "compose-log") \
     2> >(prefix_output "$C_YELLOW" "compose-log" >&2) &
   compose_logs_pid=$!
 }
@@ -95,7 +94,8 @@ send_report() {
     return
   fi
 
-  echo "${C_BLUE}Sending test report to Specmatic Cloud...${C_RESET}"
+
+  echo "${C_BLUE}Sending test report to Insights from $(pwd)...${C_RESET}"
 
   "${SPECMATIC_CMD[@]}" send-report -v \
     --repo-id=$(gh api 'repos/{owner}/{repo}' --jq .id) \
@@ -125,36 +125,32 @@ start_compose_logs
 
 
 echo "${C_BLUE}Cleaning up previous build and specmatic state...${C_RESET}"
-rm -rf "${PROJECT_DIR}/build" || true
-rm -rf "${PROJECT_DIR}/.specmatic" || true
+rm -rf build || true
+rm -rf .specmatic || true
 
 echo "${C_BLUE}Project: ${PROJECT_DIR}${C_RESET}"
-mock_dir="${PROJECT_DIR}"
-if [[ "${SPECMATIC_GENERATIVE_TESTS:-}" == "true" ]]; then
-  mock_dir="${PROJECT_DIR}"
-  echo "${C_BLUE}SPECMATIC_GENERATIVE_TESTS=true detected; using ${PROJECT_DIR}/specmatic.yaml for dependency mocks${C_RESET}"
-fi
-echo "${C_BLUE}Starting mock from ${mock_dir}/specmatic.yaml${C_RESET}"
-(
-  cd "$mock_dir"
+if [[ "$(yq eval 'has("dependencies")' specmatic.yaml)" == "true" ]]; then
+  if [[ "${SPECMATIC_GENERATIVE_TESTS:-}" == "true" ]]; then
+    echo "${C_BLUE}SPECMATIC_GENERATIVE_TESTS=true detected; using ${PROJECT_DIR}/specmatic.yaml for dependency mocks${C_RESET}"
+  fi
+
+  echo "${C_BLUE}Starting mock from ${PROJECT_DIR}/specmatic.yaml${C_RESET}"
   "${SPECMATIC_CMD[@]}" mock \
     > >(prefix_output "$C_CYAN" "mock") \
-    2> >(prefix_output "$C_CYAN" "mock" >&2)
-) &
-mock_pid=$!
-
-sleep 3
+    2> >(prefix_output "$C_CYAN" "mock" >&2) &
+  mock_pid=$!
+  sleep 3
+else
+  echo "${C_YELLOW}No dependencies in ${PROJECT_DIR}/specmatic.yaml; skipping mock startup${C_RESET}"
+fi
 
 echo "${C_BLUE}Running test from ${PROJECT_DIR}/specmatic.yaml${C_RESET}"
-if (
-  cd "$PROJECT_DIR"
-  "${SPECMATIC_CMD[@]}" test
-) 2>&1 | prefix_output "$C_BLUE" "test"; then
-  echo "${C_GREEN}RESULT: PASS${C_RESET}"
+if "${SPECMATIC_CMD[@]}" test 2>&1 | prefix_output "$C_BLUE" "test"; then
+  echo "${C_GREEN}RESULT: PASS (${PROJECT_NAME}: ${PROJECT_DIR})${C_RESET}"
   test_exit=0
 else
   test_exit=$?
-  echo "${C_RED}RESULT: FAIL (exit ${test_exit})${C_RESET}"
+  echo "${C_RED}RESULT: FAIL (${PROJECT_NAME}: ${PROJECT_DIR}, exit ${test_exit})${C_RESET}"
 fi
 
 exit "$test_exit"

@@ -16,3 +16,4 @@ This top-level folder contains multiple repositories for sample applications and
 ## Working Notes
 - Keep contracts in the central contract repository as the source of truth for sample applications.
 - Keep examples aligned with their corresponding contracts.
+- When editing contracts, ensure that the contract repo is pushed, before running any tests in the sample applications that depend on those contracts.
