@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./specmatic-loop-common.sh
 source "${SCRIPT_DIR}/specmatic-loop-common.sh"
@@ -105,24 +105,18 @@ send_report() {
 }
 
 cleanup() {
+  local exit_code=$?
   trap - EXIT INT TERM
+
   stop_background_process "${mock_pid}"
   stop_background_process "${compose_logs_pid}"
-  send_report
-
-  # if [[ -n "${SEND_REPORT:-}" ]]; then
-  #   (
-  #     cd "$PROJECT_DIR"
-  #     echo "${C_BLUE}Sending mock report to Specmatic Cloud...${C_RESET}"
-  #     "${SPECMATIC_CMD[@]}" send-report -v \
-  #       --repo-id=$(gh api 'repos/{owner}/{repo}' --jq .id) \
-  #       --repo-name=$(gh repo view --json name -q .name) \
-  #       --repo-url=$(gh repo view --json url --jq .url) \
-  #       --branch-name main
-  #   )
-  # fi
   stop_compose
+  if ! send_report; then
+    echo "${C_YELLOW}Skipping report upload due to error${C_RESET}" >&2
+  fi
+  exit "$exit_code"
 }
+
 trap cleanup EXIT INT TERM
 
 init_compose
@@ -162,8 +156,5 @@ else
   test_exit=$?
   echo "${C_RED}RESULT: FAIL (exit ${test_exit})${C_RESET}"
 fi
-
-cd "$PROJECT_DIR"
-# send_report
 
 exit "$test_exit"
