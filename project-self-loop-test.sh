@@ -97,7 +97,7 @@ send_report() {
 
   echo "${C_BLUE}Sending test report to Insights from $(pwd)...${C_RESET}"
 
-  "${SPECMATIC_CMD[@]}" send-report -v \
+  "${SPECMATIC_CMD[@]}" send-report \
     --repo-id=$(gh api 'repos/{owner}/{repo}' --jq .id) \
     --repo-name=$(gh repo view --json name -q .name) \
     --repo-url=$(gh repo view --json url --jq .url) \
