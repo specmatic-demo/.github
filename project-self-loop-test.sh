@@ -129,7 +129,7 @@ rm -rf build || true
 rm -rf .specmatic || true
 
 echo "${C_BLUE}Project: ${PROJECT_DIR}${C_RESET}"
-if [[ "$(yq eval 'has("dependencies")' specmatic.yaml)" == "true" ]]; then
+if [[ "$(yq eval '.dependencies.services | length' specmatic.yaml)" -gt 0 ]]; then
   if [[ "${SPECMATIC_GENERATIVE_TESTS:-}" == "true" ]]; then
     echo "${C_BLUE}SPECMATIC_GENERATIVE_TESTS=true detected; using ${PROJECT_DIR}/specmatic.yaml for dependency mocks${C_RESET}"
   fi
@@ -141,7 +141,7 @@ if [[ "$(yq eval 'has("dependencies")' specmatic.yaml)" == "true" ]]; then
   mock_pid=$!
   sleep 3
 else
-  echo "${C_YELLOW}No dependencies in ${PROJECT_DIR}/specmatic.yaml; skipping mock startup${C_RESET}"
+  echo "${C_YELLOW}No dependencies.services in ${PROJECT_DIR}/specmatic.yaml; skipping mock startup${C_RESET}"
 fi
 
 echo "${C_BLUE}Running test from ${PROJECT_DIR}/specmatic.yaml${C_RESET}"
