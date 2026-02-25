@@ -10,12 +10,12 @@ flowchart LR
 
   CUST["Customer Service<br/>Exposes: HTTP + Kafka events/replies<br/>Consumes: HTTP + Kafka requests"]
   CATA["Catalog Service<br/>Exposes: HTTP + gRPC<br/>Consumes: HTTP requests"]
-  ORD["Order Service<br/>Exposes: HTTP + Kafka + JMS command/reply<br/>Consumes: HTTP + Kafka + JMS replies"]
+  ORD["Order Service<br/>Exposes: HTTP + Kafka events/replies<br/>Consumes: HTTP + Kafka requests"]
   PAY["Payment Service<br/>Exposes: HTTP + gRPC<br/>Consumes: HTTP/gRPC calls"]
   SHIP["Shipping Service<br/>Exposes: HTTP + JMS reply<br/>Consumes: HTTP/JMS commands"]
   PRICE["Pricing Service<br/>Exposes: gRPC + Kafka events/replies<br/>Consumes: gRPC + Kafka requests"]
-  NOTIF["Notification Service<br/>Exposes: Kafka reply/events + MQTT notifications<br/>Consumes: Kafka requests + MQTT acks"]
-  ANALYTICS["Analytics Pipeline<br/>Consumes: Kafka domain events<br/>Exposes: analytics datasets/APIs"]
+  NOTIF["Notification Service<br/>Exposes: MQTT notifications<br/>Consumes: MQTT acks"]
+  ANALYTICS["Analytics Pipeline<br/>Consumes: Kafka + MQTT domain events<br/>Exposes: analytics datasets/APIs"]
 
   WBFF --> CUST
   WBFF --> CATA
@@ -26,13 +26,10 @@ flowchart LR
   ORD --> PAY
   ORD --> SHIP
 
-  ORD -. "JMS command" .-> SHIP
-  SHIP -. "JMS fulfillment reply" .-> ORD
-
   CUST -. "Kafka profile events" .-> ANALYTICS
   ORD -. "Kafka order events" .-> ANALYTICS
   PRICE -. "Kafka pricing events" .-> ANALYTICS
-  NOTIF -. "Kafka notification events" .-> ANALYTICS
+  NOTIF -. "MQTT notification events" .-> ANALYTICS
 ```
 
 ## Service Descriptions
@@ -67,11 +64,11 @@ flowchart LR
 ### Order Service
 - Purpose: Owns order lifecycle (create, update, status transitions).
 - Depends on: [Payment Service](#payment-service), [Shipping Service](#shipping-service).
-- Exposes: REST APIs (`order-service/http/openapi.yaml`), Kafka order events (`order.created`, `order.status.changed`), JMS dispatch commands (`queue.shipping.dispatch.command`), and Kafka validation replies (`order.validation.reply`).
-- Consumes: HTTP commands from [Web BFF](#web-bff), JMS fulfillment replies (`queue.order.fulfillment.reply`) from [Shipping Service](#shipping-service), and Kafka validation requests (`order.validation.request`).
+- Exposes: REST APIs (`order-service/http/openapi.yaml`), Kafka order events (`order.created`, `order.status.changed`), and Kafka validation replies (`order.validation.reply`).
+- Consumes: HTTP commands from [Web BFF](#web-bff) and Kafka validation requests (`order.validation.request`).
 - Protocols:
-  - Inbound: HTTP/REST, Kafka, JMS
-  - Outbound: HTTP/gRPC to Payment, HTTP to Shipping, Kafka events/request-reply, JMS request/reply
+  - Inbound: HTTP/REST, Kafka
+  - Outbound: HTTP/gRPC to Payment, HTTP to Shipping, Kafka events/request-reply
 
 ### Payment Service
 - Purpose: Handles payment authorization, capture, and refund flows.
@@ -86,7 +83,7 @@ flowchart LR
 - Purpose: Manages shipment creation, dispatch, and tracking lifecycle.
 - Depends on: Internal/legacy fulfillment integrations.
 - Exposes: REST shipment APIs (`shipping-service/http/openapi.yaml`) and JMS fulfillment replies (`queue.order.fulfillment.reply`).
-- Consumes: Shipment requests from [Order Service](#order-service) via HTTP and JMS dispatch commands (`queue.shipping.dispatch.command`).
+- Consumes: Shipment requests from [Order Service](#order-service) via HTTP and JMS dispatch commands from legacy integrations.
 - Protocols:
   - Inbound: HTTP/REST, JMS
   - Outbound: HTTP responses, JMS request/reply responses
@@ -103,17 +100,17 @@ flowchart LR
 ### Notification Service
 - Purpose: Orchestrates user notifications across channels/devices.
 - Depends on: Internal template/channel providers.
-- Exposes: Kafka dispatch replies (`notification.dispatch.reply`), Kafka notification-sent events (`notification.sent`), and MQTT user notification topic (`notification/user`).
-- Consumes: Kafka dispatch requests (`notification.dispatch.request`) from upstream services and MQTT delivery acknowledgements (`notification/ack`) from clients/devices.
+- Exposes: MQTT user notification topic (`notification/user`).
+- Consumes: MQTT delivery acknowledgements (`notification/ack`) from clients/devices.
 - Protocols:
-  - Inbound: Kafka, MQTT
-  - Outbound: Kafka events/request-reply responses, MQTT notifications
+  - Inbound: MQTT
+  - Outbound: MQTT notifications
 
 ### Analytics Pipeline
 - Purpose: Builds analytical datasets from cross-service event streams.
 - Depends on: Event producers ([Customer Service](#customer-service), [Order Service](#order-service), [Pricing Service](#pricing-service), [Notification Service](#notification-service)).
 - Exposes: Curated analytics outputs (dashboards/datasets/APIs).
-- Consumes: Domain event streams (not request/reply channels) from producer services.
+- Consumes: Domain event streams (not request/reply channels) from producer services over Kafka and MQTT.
 - Protocols:
-  - Inbound: Kafka (event streams)
+  - Inbound: Kafka and MQTT (event streams)
   - Outbound: Platform-specific analytics interfaces
