@@ -28,7 +28,7 @@ Execute Specmatic tasks using the repository conventions and scripts in this wor
 - AsyncAPI SUT receive alignment: For an AsyncAPI system under test, every topic the application subscribes to must align with channels/operations modeled as `action: receive` in the SUT spec.
 - AsyncAPI SUT send alignment: For an AsyncAPI system under test, every topic the application publishes/sends to must align with channels/operations modeled as `action: send` in the SUT spec.
 - AsyncAPI inverse interaction handling: If observed runtime interaction direction is inverse to the SUT AsyncAPI action, model that interaction as a dependency rather than SUT behavior, and declare the relevant AsyncAPI contract under `dependencies.services`.
-- Health endpoint exception: Ignore `/health` endpoints for contract matching and violation checks across all spec types.
+- Health/meta endpoint exception: Ignore `/health` and any URL under `/_meta` for contract matching and violation checks across all spec types.
 
 ## Primary Workflow
 

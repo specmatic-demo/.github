@@ -1,0 +1,50 @@
+version: 3
+systemUnderTest:
+  service:
+    $ref: "#/components/services/shipmentTrackerService"
+    runOptions:
+      $ref: "#/components/runOptions/shipmentTrackerService"
+dependencies:
+  services:
+    - service:
+        $ref: "#/components/services/notificationService"
+        runOptions:
+          $ref: "#/components/runOptions/notificationServiceMock"
+components:
+  sources:
+    centralContractRepo:
+      git:
+        url: https://github.com/specmatic-demo/central-contract-repository
+  services:
+    shipmentTrackerService:
+      description: "Shipment Tracker Service"
+      definitions:
+        - definition:
+            source:
+              $ref: "#/components/sources/centralContractRepo"
+            specs:
+              - spec:
+                  path: "contracts/services/shipment-tracker-service/events/asyncapi.yaml"
+    notificationService:
+      description: "Notification Service HTTP dependency"
+      definitions:
+        - definition:
+            source:
+              $ref: "#/components/sources/centralContractRepo"
+            specs:
+              - spec:
+                  path: "contracts/services/notification-service/http/openapi.yaml"
+  runOptions:
+    shipmentTrackerService:
+      asyncapi:
+        type: test
+        servers:
+          - host: "localhost:5413"
+            protocol: kafka
+          - host: tcp://localhost:1883
+            protocol: mqtt
+    notificationServiceMock:
+      openapi:
+        type: mock
+        host: localhost
+        port: 5113
