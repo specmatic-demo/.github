@@ -6,15 +6,12 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-      mqtt:
-        condition: service_started
       kafka-topics-init:
         condition: service_completed_successfully
     ports:
       - "9012:9012"
     environment:
       - SHIPMENT_TRACKER_KAFKA_BROKERS=kafka:9092
-      - SHIPMENT_TRACKER_MQTT_URL=mqtt://mqtt:1883
       - NOTIFICATION_BASE_URL=http://host.docker.internal:5113
   kafka:
     image: apache/kafka:latest
@@ -54,9 +51,3 @@ services:
     command: >
       "/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic shipment.status.changed --partitions 1 --replication-factor 1 &&
        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic shipment.status.realtime --partitions 1 --replication-factor 1"
-  mqtt:
-    image: eclipse-mosquitto:2
-    container_name: shipment-tracker-service-mqtt
-    restart: unless-stopped
-    ports:
-      - "1883:1883"

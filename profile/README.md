@@ -18,7 +18,7 @@ The central contract files are under:
 - Java (for `specmatic-enterprise`)
 - `specmatic-enterprise` command available in `PATH`, or alias configured as:
   - `specmatic-enterprise='java $JAVA_OPTS -jar ~/.specmatic/specmatic-enterprise.jar'`
-- Docker + Docker Compose (for projects that need infrastructure, e.g. MQTT)
+- Docker + Docker Compose (for projects that need infrastructure, e.g. Kafka)
 
 ## Shell Scripts
 
@@ -71,4 +71,4 @@ cd order-service
 
 ## Notes
 
-- If a project needs external infra (for example MQTT), place a compose file in that project directory; `project-self-loop-test.sh` will automatically `up` before test and `down` after.
+- If a project needs external infra (for example Kafka), place a compose file in that project directory; `project-self-loop-test.sh` will automatically `up` before test and `down` after.

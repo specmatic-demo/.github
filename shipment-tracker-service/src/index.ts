@@ -1,6 +1,5 @@
 import express, { type Request, type Response } from 'express';
 import { Kafka, type Consumer, type Producer } from 'kafkajs';
-import mqtt, { type MqttClient } from 'mqtt';
 import type {
   NotificationDispatchRequest,
   ShipmentStatus,
@@ -16,8 +15,6 @@ const kafkaBrokers = (process.env.SHIPMENT_TRACKER_KAFKA_BROKERS || 'localhost:9
   .filter(Boolean);
 const kafkaTopic = process.env.SHIPMENT_STATUS_CHANGED_TOPIC || 'shipment.status.changed';
 const realtimeKafkaTopic = process.env.SHIPMENT_STATUS_REALTIME_TOPIC || 'shipment.status.realtime';
-const mqttUrl = process.env.SHIPMENT_TRACKER_MQTT_URL || 'mqtt://localhost:1883';
-const mqttTopic = process.env.SHIPMENT_STATUS_REALTIME_MQTT_TOPIC || 'shipment.status.realtime';
 const notificationBaseUrl = process.env.NOTIFICATION_BASE_URL || 'http://localhost:5113';
 
 const app = express();
@@ -29,11 +26,9 @@ const kafka = new Kafka({
 });
 const consumer: Consumer = kafka.consumer({ groupId: 'shipment-tracker-service-group' });
 const producer: Producer = kafka.producer();
-const mqttClient: MqttClient = mqtt.connect(mqttUrl);
 
 const relayedEvents: ShipmentStatusRealtime[] = [];
 const maxRelayedEvents = 100;
-let mqttConnected = false;
 let kafkaConnected = false;
 
 function isShipmentStatus(value: unknown): value is ShipmentStatus {
@@ -98,17 +93,6 @@ async function publishRealtimeEvent(event: ShipmentStatusRealtime): Promise<void
   await producer.send({
     topic: realtimeKafkaTopic,
     messages: [{ key: event.shipmentId, value: JSON.stringify(event) }]
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    mqttClient.publish(mqttTopic, JSON.stringify(event), { qos: 1 }, (error?: Error | null) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve();
-    });
   });
 }
 
@@ -185,26 +169,10 @@ async function startKafkaConsumer(): Promise<void> {
   });
 }
 
-mqttClient.on('connect', () => {
-  mqttConnected = true;
-  console.log(`[mqtt] connected to ${mqttUrl}`);
-});
-
-mqttClient.on('offline', () => {
-  mqttConnected = false;
-  console.warn('[mqtt] offline');
-});
-
-mqttClient.on('error', (error: Error) => {
-  mqttConnected = false;
-  console.error(`[mqtt] error: ${error.message}`);
-});
-
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'UP',
-    kafkaConnected,
-    mqttConnected
+    kafkaConnected
   });
 });
 

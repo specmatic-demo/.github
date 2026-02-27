@@ -82,7 +82,7 @@ SPECMATIC_GENERATIVE_TESTS=true ./project-self-loop-test.sh web-bff
 - `No dependencies.services ... skipping mock startup`:
 - Expected when a service has no dependency mocks configured.
 
-- AsyncAPI/MQTT test failures:
+- AsyncAPI/Kafka test failures:
 - Verify broker host/port in `runOptions.asyncapi.servers`.
 - If infra is required, ensure service-level compose file exists and starts.
 
