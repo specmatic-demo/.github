@@ -50,13 +50,27 @@ echo
 echo "Running self loop tests for ${#PROJECTS[@]} projects"
 echo
 
+(
+  cd central-contract-repository
+  ./ci.sh
+)
+
 for project in "${PROJECTS[@]}"; do
   project_path="${SCRIPT_DIR}/${project}"
+  project_ci_script="${project_path}/ci.sh"
   FILTER_INDEX=$((RANDOM % ${#FILTER_POOL[@]}))
   PROJECT_FILTER="${FILTER_POOL[$FILTER_INDEX]}"
   echo "=== ${project} ==="
   echo "FILTER: ${PROJECT_FILTER}"
-  if FILTER="${PROJECT_FILTER}" "${PROJECT_RUNNER}" "${project_path}"; then
+  if [[ -f "${project_ci_script}" ]]; then
+    echo "Runner: ${project}/ci.sh"
+    run_cmd=(bash "${project_ci_script}")
+  else
+    echo "Runner: ${PROJECT_RUNNER}"
+    run_cmd=("${PROJECT_RUNNER}" "${project_path}")
+  fi
+
+  if FILTER="${PROJECT_FILTER}" "${run_cmd[@]}"; then
     pass=$((pass + 1))
     PASSING_PROJECTS+=("${project}")
   else
