@@ -1,0 +1,45 @@
+[submodule "analytics-pipeline"]
+	path = analytics-pipeline
+	url = https://github.com/specmatic-demo/analytics-pipeline
+[submodule "catalog-service"]
+	path = catalog-service
+	url = https://github.com/specmatic-demo/catalog-service
+[submodule "central-contract-repository"]
+	path = central-contract-repository
+	url = https://github.com/specmatic-demo/central-contract-repository
+[submodule "customer-service"]
+	path = customer-service
+	url = https://github.com/specmatic-demo/customer-service
+[submodule "inventory-projection-service"]
+	path = inventory-projection-service
+	url = https://github.com/specmatic-demo/inventory-projection-service
+[submodule "inventory-sync-service"]
+	path = inventory-sync-service
+	url = https://github.com/specmatic-demo/inventory-sync-service.git
+[submodule "notification-service"]
+	path = notification-service
+	url = https://github.com/specmatic-demo/notification-service
+[submodule "order-service"]
+	path = order-service
+	url = https://github.com/specmatic-demo/order-service
+[submodule "payment-service"]
+	path = payment-service
+	url = https://github.com/specmatic-demo/payment-service
+[submodule "pricing-service"]
+	path = pricing-service
+	url = https://github.com/specmatic-demo/pricing-service
+[submodule "returns-service"]
+	path = returns-service
+	url = https://github.com/specmatic-demo/returns-service
+[submodule "shipment-tracker-service"]
+	path = shipment-tracker-service
+	url = https://github.com/specmatic-demo/shipment-tracker-service.git
+[submodule "shipping-service"]
+	path = shipping-service
+	url = https://github.com/specmatic-demo/shipping-service
+[submodule "web-bff"]
+	path = web-bff
+	url = https://github.com/specmatic-demo/web-bff
+[submodule "web-frontend"]
+	path = web-frontend
+	url = https://github.com/specmatic-demo/web-frontend.git
