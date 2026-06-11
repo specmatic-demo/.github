@@ -3,13 +3,19 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_RUNNER="${SCRIPT_DIR}/project-self-loop-test.sh"
+FEDERATED_PROVIDER_PROJECTS=(
+  "catalog-service"
+  "pricing-service"
+  "notification-service"
+  "web-bff"
+)
 
 if [[ ! -x "${PROJECT_RUNNER}" ]]; then
   echo "Missing or non-executable script: ${PROJECT_RUNNER}" >&2
   exit 1
 fi
 
-mapfile -t PROJECTS < <(
+mapfile -t DISCOVERED_PROJECTS < <(
   find "${SCRIPT_DIR}" -mindepth 1 -maxdepth 1 -type d \
     ! -name ".*" \
     -exec test -f "{}/specmatic.yaml" \; \
@@ -18,10 +24,32 @@ mapfile -t PROJECTS < <(
     | sort
 )
 
-if [[ ${#PROJECTS[@]} -eq 0 ]]; then
+if [[ ${#DISCOVERED_PROJECTS[@]} -eq 0 ]]; then
   echo "No project directories found with specmatic.yaml."
   exit 1
 fi
+
+PROJECTS=()
+
+for project in "${FEDERATED_PROVIDER_PROJECTS[@]}"; do
+  if printf '%s\n' "${DISCOVERED_PROJECTS[@]}" | grep -qx "${project}"; then
+    PROJECTS+=("${project}")
+  fi
+done
+
+for project in "${DISCOVERED_PROJECTS[@]}"; do
+  skip="false"
+  for prioritized in "${FEDERATED_PROVIDER_PROJECTS[@]}"; do
+    if [[ "${project}" == "${prioritized}" ]]; then
+      skip="true"
+      break
+    fi
+  done
+
+  if [[ "${skip}" == "false" ]]; then
+    PROJECTS+=("${project}")
+  fi
+done
 
 pass=0
 fail=0
@@ -64,7 +92,7 @@ for project in "${PROJECTS[@]}"; do
   echo "FILTER: ${PROJECT_FILTER}"
   if [[ -f "${project_ci_script}" ]]; then
     echo "Runner: ${project}/ci.sh"
-    run_cmd=(bash "${project_ci_script}")
+    run_cmd=(bash -c "cd \"$1\" && bash ./ci.sh" _ "${project_path}")
   else
     echo "Runner: ${PROJECT_RUNNER}"
     run_cmd=("${PROJECT_RUNNER}" "${project_path}")
