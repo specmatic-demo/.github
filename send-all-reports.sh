@@ -148,6 +148,10 @@ for project in "${FEDERATED_PROVIDER_PROJECTS[@]}"; do
   echo
 done
 
+echo "Waiting 65 seconds for central repo builds to be processed before sending service builds..."
+sleep 65
+echo
+
 for project in "${PROJECTS[@]}"; do
   echo "=== ${project} ==="
   if send_report_for_repo "${SCRIPT_DIR}/${project}"; then
