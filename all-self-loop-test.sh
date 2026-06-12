@@ -15,6 +15,13 @@ if [[ ! -x "${PROJECT_RUNNER}" ]]; then
   exit 1
 fi
 
+run_project_script_from_dir() {
+  local project_path="$1"
+  local script_name="$2"
+
+  bash -c "cd \"$1\" && bash \"./$2\"" _ "${project_path}" "${script_name}"
+}
+
 mapfile -t DISCOVERED_PROJECTS < <(
   find "${SCRIPT_DIR}" -mindepth 1 -maxdepth 1 -type d \
     ! -name ".*" \
@@ -83,6 +90,20 @@ echo
   ./ci.sh
 )
 
+for project in "${FEDERATED_PROVIDER_PROJECTS[@]}"; do
+  project_path="${SCRIPT_DIR}/${project}"
+  central_repo_script="${project_path}/ci_central_repo_report.sh"
+
+  if [[ ! -f "${central_repo_script}" ]]; then
+    continue
+  fi
+
+  echo "=== ${project} central repo report ==="
+  echo "Runner: ${project}/ci_central_repo_report.sh"
+  run_project_script_from_dir "${project_path}" "ci_central_repo_report.sh"
+  echo
+done
+
 for project in "${PROJECTS[@]}"; do
   project_path="${SCRIPT_DIR}/${project}"
   project_ci_script="${project_path}/ci.sh"
@@ -92,7 +113,7 @@ for project in "${PROJECTS[@]}"; do
   echo "FILTER: ${PROJECT_FILTER}"
   if [[ -f "${project_ci_script}" ]]; then
     echo "Runner: ${project}/ci.sh"
-    run_cmd=(bash -c "cd \"$1\" && bash ./ci.sh" _ "${project_path}")
+    run_cmd=(run_project_script_from_dir "${project_path}" "ci.sh")
   else
     echo "Runner: ${PROJECT_RUNNER}"
     run_cmd=("${PROJECT_RUNNER}" "${project_path}")

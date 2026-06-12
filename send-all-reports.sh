@@ -59,6 +59,14 @@ has_report_files() {
   find "${report_dir}" -type f | grep -q .
 }
 
+has_federated_central_repo_report_files() {
+  local repo_path="$1"
+  local report_dir="${repo_path}/specs/build/reports/specmatic"
+
+  [[ -d "${report_dir}" ]] || return 1
+  find "${report_dir}" -type f | grep -q .
+}
+
 send_report_for_repo() {
   local repo_path="$1"
   local repo_name
@@ -81,6 +89,31 @@ send_report_for_repo() {
   )
 }
 
+send_federated_central_repo_report_for_repo() {
+  local repo_path="$1"
+  local repo_name
+  local central_repo_script="${repo_path}/ci_central_repo_report.sh"
+  repo_name="$(basename "${repo_path}")"
+
+  if [[ ! -f "${central_repo_script}" ]]; then
+    echo "${C_YELLOW}Skipping ${repo_name} central repo report: ci_central_repo_report.sh not found${C_RESET}"
+    SKIPPED_PROJECTS+=("${repo_name} central-repo")
+    return 0
+  fi
+
+  if ! has_federated_central_repo_report_files "${repo_path}"; then
+    echo "${C_YELLOW}Skipping ${repo_name} central repo report: no generated federated central repo report found${C_RESET}"
+    SKIPPED_PROJECTS+=("${repo_name} central-repo")
+    return 0
+  fi
+
+  echo "${C_BLUE}Sending federated central repo report for ${repo_name}${C_RESET}"
+  (
+    cd "${repo_path}"
+    SEND_REPORT=1 bash ./ci_central_repo_report.sh
+  )
+}
+
 pass=0
 fail=0
 PASSING_PROJECTS=()
@@ -99,6 +132,22 @@ else
 fi
 echo
 
+for project in "${FEDERATED_PROVIDER_PROJECTS[@]}"; do
+  echo "=== ${project} central repo report ==="
+  if send_federated_central_repo_report_for_repo "${SCRIPT_DIR}/${project}"; then
+    if [[ " ${SKIPPED_PROJECTS[*]} " == *" ${project} central-repo "* ]]; then
+      :
+    else
+      pass=$((pass + 1))
+      PASSING_PROJECTS+=("${project} central-repo")
+    fi
+  else
+    fail=$((fail + 1))
+    FAILING_PROJECTS+=("${project} central-repo")
+  fi
+  echo
+done
+
 for project in "${PROJECTS[@]}"; do
   echo "=== ${project} ==="
   if send_report_for_repo "${SCRIPT_DIR}/${project}"; then
@@ -115,7 +164,7 @@ for project in "${PROJECTS[@]}"; do
   echo
 done
 
-echo "SUMMARY: PASS=${pass} FAIL=${fail} SKIP=${#SKIPPED_PROJECTS[@]} TOTAL=$(( ${#PROJECTS[@]} + 1 ))"
+echo "SUMMARY: PASS=${pass} FAIL=${fail} SKIP=${#SKIPPED_PROJECTS[@]} TOTAL=$(( ${#PROJECTS[@]} + ${#FEDERATED_PROVIDER_PROJECTS[@]} + 1 ))"
 echo "Sent reports:"
 if [[ ${#PASSING_PROJECTS[@]} -eq 0 ]]; then
   echo "  (none)"

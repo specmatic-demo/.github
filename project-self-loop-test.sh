@@ -39,26 +39,6 @@ compose_file=""
 compose_started="false"
 COMPOSE_CMD=()
 
-is_federated_provider_repo() {
-  case "${PROJECT_NAME}" in
-    catalog-service|pricing-service|notification-service|web-bff)
-      return 0
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
-generate_central_repo_report_if_needed() {
-  if ! is_federated_provider_repo; then
-    return
-  fi
-
-  echo "${C_BLUE}Generating central contract repo report from ${PROJECT_DIR}${C_RESET}"
-  "${SPECMATIC_CMD[@]}" central-contract-repo-report 2>&1 | prefix_output "$C_GREEN" "central-repo-report"
-}
-
 init_compose() {
   local candidate
 
@@ -166,7 +146,6 @@ fi
 
 echo "${C_BLUE}Running test from ${PROJECT_DIR}/specmatic.yaml${C_RESET}"
 if "${SPECMATIC_CMD[@]}" test 2>&1 | prefix_output "$C_BLUE" "test"; then
-  generate_central_repo_report_if_needed
   echo "${C_GREEN}RESULT: PASS (${PROJECT_NAME}: ${PROJECT_DIR})${C_RESET}"
   test_exit=0
 else
