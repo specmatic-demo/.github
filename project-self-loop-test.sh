@@ -139,7 +139,7 @@ if [[ "$(yq eval '.dependencies.services | length' specmatic.yaml)" -gt 0 ]]; th
     > >(prefix_output "$C_CYAN" "mock") \
     2> >(prefix_output "$C_CYAN" "mock" >&2) &
   mock_pid=$!
-  sleep 3
+  sleep 6
 else
   echo "${C_YELLOW}No dependencies.services in ${PROJECT_DIR}/specmatic.yaml; skipping mock startup${C_RESET}"
 fi
