@@ -148,8 +148,8 @@ for project in "${FEDERATED_PROVIDER_PROJECTS[@]}"; do
   echo
 done
 
-echo "Waiting 65 seconds for central repo builds to be processed before sending service builds..."
-sleep 65
+echo "Waiting 120 seconds for central repo builds to be processed before sending service builds..."
+sleep 120
 echo
 
 for project in "${PROJECTS[@]}"; do
