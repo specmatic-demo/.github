@@ -5,6 +5,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./specmatic-loop-common.sh
 source "${SCRIPT_DIR}/specmatic-loop-common.sh"
 
+TARGET_PROJECT_PATH="${1:-}"
+TARGET_PROJECT_NAME=""
+if [[ -n "${TARGET_PROJECT_PATH}" ]]; then
+  TARGET_PROJECT_NAME="$(basename "${TARGET_PROJECT_PATH}")"
+fi
+
 FEDERATED_PROVIDER_PROJECTS=(
   "catalog-service"
   "pricing-service"
@@ -119,6 +125,83 @@ fail=0
 PASSING_PROJECTS=()
 FAILING_PROJECTS=()
 SKIPPED_PROJECTS=()
+
+send_and_record_repo() {
+  local repo_name="$1"
+  shift
+
+  if "$@"; then
+    if [[ " ${SKIPPED_PROJECTS[*]} " == *" ${repo_name} "* ]]; then
+      :
+    else
+      pass=$((pass + 1))
+      PASSING_PROJECTS+=("${repo_name}")
+    fi
+  else
+    fail=$((fail + 1))
+    FAILING_PROJECTS+=("${repo_name}")
+  fi
+  echo
+}
+
+send_single_project_reports() {
+  local repo_path="$1"
+  local repo_name
+  repo_name="$(basename "${repo_path}")"
+
+  if [[ "${repo_name}" == "central-contract-repository" ]]; then
+    echo "Sending report artifacts for 1 repo"
+    echo
+    echo "=== ${repo_name} ==="
+    send_and_record_repo "${repo_name}" send_report_for_repo "${repo_path}"
+    return
+  fi
+
+  echo "Sending report artifacts for 1 repo"
+  echo
+
+  if printf '%s\n' "${FEDERATED_PROVIDER_PROJECTS[@]}" | grep -qx "${repo_name}"; then
+    echo "=== ${repo_name} central repo report ==="
+    send_and_record_repo "${repo_name} central-repo" send_federated_central_repo_report_for_repo "${repo_path}"
+
+    echo "Waiting 120 seconds for central repo builds to be processed before sending service builds..."
+    sleep 120
+    echo
+  fi
+
+  echo "=== ${repo_name} ==="
+  send_and_record_repo "${repo_name}" send_report_for_repo "${repo_path}"
+}
+
+if [[ -n "${TARGET_PROJECT_PATH}" ]]; then
+  send_single_project_reports "${TARGET_PROJECT_PATH}"
+  echo "SUMMARY: PASS=${pass} FAIL=${fail} SKIP=${#SKIPPED_PROJECTS[@]} TOTAL=$(( ${pass} + ${fail} + ${#SKIPPED_PROJECTS[@]} ))"
+  echo "Sent reports:"
+  if [[ ${#PASSING_PROJECTS[@]} -eq 0 ]]; then
+    echo "  (none)"
+  else
+    printf '  - %s\n' "${PASSING_PROJECTS[@]}"
+  fi
+
+  echo "Skipped repos:"
+  if [[ ${#SKIPPED_PROJECTS[@]} -eq 0 ]]; then
+    echo "  (none)"
+  else
+    printf '  - %s\n' "${SKIPPED_PROJECTS[@]}"
+  fi
+
+  echo "Failed repos:"
+  if [[ ${#FAILING_PROJECTS[@]} -eq 0 ]]; then
+    echo "  (none)"
+  else
+    printf '  - %s\n' "${FAILING_PROJECTS[@]}"
+  fi
+
+  if [[ ${fail} -ne 0 ]]; then
+    exit 1
+  fi
+  exit 0
+fi
 
 echo "Sending report artifacts for $(( ${#PROJECTS[@]} + 1 )) repos"
 echo
