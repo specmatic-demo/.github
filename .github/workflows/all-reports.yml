@@ -32,15 +32,12 @@ jobs:
           echo "${{ secrets.SPECMATIC_LICENSE_KEY }}" > ~/.specmatic/specmatic-license.txt
           curl -fsSL https://docs.specmatic.io/install-specmatic-enterprise.sh | bash
 
-      - name: Run tests and send report
+      - name: Debug web-bff report upload
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
+          SPECMATIC_LOG_LEVEL: DEBUG
+          SPECMATIC_DEBUG: "true"
         run: |
-          ls -alh
-          export SEND_REPORT=1
-          if [ $((RANDOM % 2)) -eq 0 ]; then
-            export SPECMATIC_GENERATIVE_TESTS=true
-          fi
-
-          ./all-self-loop-test.sh || true
+          set -x
+          ./project-self-loop-test.sh web-bff
