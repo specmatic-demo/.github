@@ -105,7 +105,7 @@ cleanup() {
   local exit_code=$?
   trap - EXIT INT TERM
 
-  stop_background_process_group "${mock_pid}"
+  stop_background_process "${mock_pid}" INT
   stop_background_process "${compose_logs_pid}"
   stop_compose
   exit "$exit_code"
@@ -129,15 +129,9 @@ if [[ "$(yq eval '.dependencies.services | length' specmatic.yaml)" -gt 0 ]]; th
   fi
 
   echo "${C_BLUE}Starting mock from ${PROJECT_DIR}/specmatic.yaml${C_RESET}"
-  if command -v setsid >/dev/null 2>&1; then
-    setsid "${SPECMATIC_CMD[@]}" mock \
-      > >(prefix_output "$C_CYAN" "mock") \
-      2> >(prefix_output "$C_CYAN" "mock" >&2) &
-  else
-    "${SPECMATIC_CMD[@]}" mock \
-      > >(prefix_output "$C_CYAN" "mock") \
-      2> >(prefix_output "$C_CYAN" "mock" >&2) &
-  fi
+  "${SPECMATIC_CMD[@]}" mock \
+    > >(prefix_output "$C_CYAN" "mock") \
+    2> >(prefix_output "$C_CYAN" "mock" >&2) &
   mock_pid=$!
   sleep 6
 else
