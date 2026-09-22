@@ -2,6 +2,12 @@ name: Specmatic Reports
 
 on:
   workflow_call:
+    inputs:
+      run_project_tests:
+        description: Run project Specmatic tests and mocks
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   specmatic:
@@ -33,12 +39,18 @@ jobs:
           curl -fsSL https://docs.specmatic.io/install-specmatic-enterprise.sh | bash
 
       - name: Generate central contract repository report
-        if: ${{ hashFiles('ci_central_repo_report.sh') != '' }}
+        if: ${{ hashFiles('ci_central_repo_report.sh') != '' || (!inputs.run_project_tests && hashFiles('ci.sh') != '') }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: ./ci_central_repo_report.sh
+        run: |
+          if [ -f ci_central_repo_report.sh ]; then
+            ./ci_central_repo_report.sh
+          else
+            ./ci.sh
+          fi
 
       - name: Run project tests and mocks
+        if: inputs.run_project_tests
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
