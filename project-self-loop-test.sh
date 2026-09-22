@@ -89,21 +89,6 @@ start_compose_logs() {
   compose_logs_pid=$!
 }
 
-send_report() {
-  if [[ -z "${SEND_REPORT:-}" ]]; then
-    return
-  fi
-
-
-  echo "${C_BLUE}Sending test report to Insights from $(pwd)...${C_RESET}"
-
-  "${SPECMATIC_CMD[@]}" send-report \
-    --repo-id=$(gh api 'repos/{owner}/{repo}' --jq .id) \
-    --repo-name=$(gh repo view --json name -q .name) \
-    --repo-url=$(gh repo view --json url --jq .url) \
-    --branch-name main
-}
-
 cleanup() {
   local exit_code=$?
   trap - EXIT INT TERM
@@ -111,9 +96,6 @@ cleanup() {
   stop_background_process "${mock_pid}"
   stop_background_process "${compose_logs_pid}"
   stop_compose
-  if ! send_report; then
-    echo "${C_YELLOW}Skipping report upload due to error${C_RESET}" >&2
-  fi
   exit "$exit_code"
 }
 

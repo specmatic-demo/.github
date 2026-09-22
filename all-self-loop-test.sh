@@ -165,12 +165,6 @@ for project in "${FEDERATED_PROVIDER_PROJECTS[@]}"; do
   echo
 done
 
-if [[ -n "${SEND_REPORT:-}" ]]; then
-  echo "Waiting 120 seconds for central repo builds to be processed before running service builds..."
-  sleep 120
-  echo
-fi
-
 for project in "${PROJECTS[@]}"; do
   project_path="${SCRIPT_DIR}/${project}"
   project_ci_script="${project_path}/ci.sh"
