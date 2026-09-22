@@ -10,7 +10,7 @@ on:
         default: true
 
 jobs:
-  specmatic:
+  run-specmatic:
     runs-on: ubuntu-latest
     permissions:
       contents: read
