@@ -105,7 +105,7 @@ cleanup() {
   local exit_code=$?
   trap - EXIT INT TERM
 
-  stop_background_process "${mock_pid}" INT
+  stop_background_process "${mock_pid}"
   stop_background_process "${compose_logs_pid}"
   stop_compose
   exit "$exit_code"
