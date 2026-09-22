@@ -106,6 +106,8 @@ cleanup() {
   trap - EXIT INT TERM
 
   stop_background_process "${mock_pid}"
+  echo "Generated reports after mock shutdown:"
+  find "${PROJECT_DIR}/build/reports/specmatic" -type f -print 2>/dev/null || true
   stop_background_process "${compose_logs_pid}"
   stop_compose
   exit "$exit_code"
