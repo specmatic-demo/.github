@@ -6,6 +6,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./specmatic-loop-common.sh
 source "${SCRIPT_DIR}/specmatic-loop-common.sh"
 
+PROJECT_DIR="$(pwd)"
+PROJECT_REPO_URL="$(git -C "$PROJECT_DIR" config --get remote.origin.url | sed -E 's#^git@github.com:#https://github.com/#; s#\.git$##')"
+PROJECT_REPO_SLUG="${PROJECT_REPO_URL#https://github.com/}"
+export SPECMATIC_REPO_ID="$(gh api "repos/${PROJECT_REPO_SLUG}" --jq .id)"
+export SPECMATIC_REPO_NAME="${PROJECT_REPO_SLUG##*/}"
+export SPECMATIC_REPO_URL="${PROJECT_REPO_URL}"
+export SPECMATIC_BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-main}}"
+
 init_specmatic_cmd
 
 mapfile -t SPEC_FILES < <(find "$CONTRACTS_DIR" -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.proto" -o -name "*.graphql" \) | sort)
