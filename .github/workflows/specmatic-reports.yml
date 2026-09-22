@@ -1,0 +1,45 @@
+name: Specmatic Reports
+
+on:
+  workflow_call:
+
+jobs:
+  specmatic:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout project repository
+        uses: actions/checkout@v6
+
+      - name: Checkout shared Specmatic scripts
+        uses: actions/checkout@v6
+        with:
+          repository: specmatic-demo/.github
+          path: .specmatic-shared
+          ref: main
+          submodules: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Initialize Specmatic License and Download Specmatic Enterprise
+        run: |
+          mkdir -p ~/.specmatic
+          echo "${{ secrets.SPECMATIC_LICENSE_KEY }}" > ~/.specmatic/specmatic-license.txt
+          curl -fsSL https://docs.specmatic.io/install-specmatic-enterprise.sh | bash
+
+      - name: Generate central contract repository report
+        if: ${{ hashFiles('ci_central_repo_report.sh') != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./ci_central_repo_report.sh
+
+      - name: Run project tests and mocks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash .specmatic-shared/project-self-loop-test.sh "$GITHUB_WORKSPACE"
