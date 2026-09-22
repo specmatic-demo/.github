@@ -60,6 +60,30 @@ stop_background_process() {
   fi
 }
 
+stop_background_process_group() {
+  local pid="${1:-}"
+  if [[ -z "$pid" ]]; then
+    return
+  fi
+
+  if kill -INT -- "-${pid}" >/dev/null 2>&1; then
+    local deadline=$((SECONDS + 30))
+    while process_tree_running "$pid" && (( SECONDS < deadline )); do
+      sleep 0.2
+    done
+  fi
+
+  if process_tree_running "$pid"; then
+    terminate_process_tree "$pid" TERM
+  fi
+
+  if process_tree_running "$pid"; then
+    terminate_process_tree "$pid" KILL
+  fi
+
+  wait "$pid" >/dev/null 2>&1 || true
+}
+
 process_tree_running() {
   local pid="$1"
   local child_pid
