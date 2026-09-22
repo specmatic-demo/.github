@@ -43,8 +43,9 @@ prefix_output() {
 
 stop_background_process() {
   local pid="${1:-}"
+  local graceful_signal="${2:-TERM}"
   if [[ -n "$pid" ]]; then
-    terminate_process_tree "$pid" TERM
+    terminate_process_tree "$pid" "$graceful_signal"
 
     local deadline=$((SECONDS + 30))
     while process_tree_running "$pid" && (( SECONDS < deadline )); do
