@@ -19,7 +19,21 @@ run_project_script_from_dir() {
   local project_path="$1"
   local script_name="$2"
 
-  bash -c "cd \"$1\" && bash \"./$2\"" _ "${project_path}" "${script_name}"
+  local repo_url
+  local repo_slug
+  local repo_id
+  repo_url="$(git -C "${project_path}" config --get remote.origin.url | sed -E 's#^git@github.com:#https://github.com/#; s#\\.git$##')"
+  repo_slug="${repo_url#https://github.com/}"
+  repo_id="$(gh api "repos/${repo_slug}" --jq .id)"
+
+  SPECMATIC_REPO_ID="${repo_id}" \
+  SPECMATIC_REPO_NAME="${repo_slug##*/}" \
+  SPECMATIC_REPO_URL="${repo_url}" \
+  SPECMATIC_BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-main}}" \
+  GITHUB_REPOSITORY="${repo_slug}" \
+  GITHUB_REPOSITORY_ID="${repo_id}" \
+  GITHUB_SERVER_URL="https://github.com" \
+    bash -c "cd \"$1\" && bash \"./$2\"" _ "${project_path}" "${script_name}"
 }
 
 mapfile -t DISCOVERED_PROJECTS < <(

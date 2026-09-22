@@ -44,25 +44,49 @@ prefix_output() {
 stop_background_process() {
   local pid="${1:-}"
   if [[ -n "$pid" ]]; then
-    stop_process_tree "$pid"
+    terminate_process_tree "$pid" TERM
+
+    local deadline=$((SECONDS + 30))
+    while process_tree_running "$pid" && (( SECONDS < deadline )); do
+      sleep 0.2
+    done
+
+    if process_tree_running "$pid"; then
+      terminate_process_tree "$pid" KILL
+    fi
+
     wait "$pid" >/dev/null 2>&1 || true
   fi
 }
 
-stop_process_tree() {
+process_tree_running() {
   local pid="$1"
   local child_pid
+  local process_running=1
 
-  if ! kill -0 "$pid" >/dev/null 2>&1; then
-    return
+  if kill -0 "$pid" >/dev/null 2>&1; then
+    process_running=0
   fi
 
   while IFS= read -r child_pid; do
     [[ -n "$child_pid" ]] || continue
-    stop_process_tree "$child_pid"
+    if process_tree_running "$child_pid"; then
+      return 0
+    fi
   done < <(pgrep -P "$pid" 2>/dev/null || true)
 
-  kill "$pid" >/dev/null 2>&1 || true
-  sleep 0.2
-  kill -9 "$pid" >/dev/null 2>&1 || true
+  return "$process_running"
+}
+
+terminate_process_tree() {
+  local pid="$1"
+  local signal="$2"
+  local child_pid
+
+  while IFS= read -r child_pid; do
+    [[ -n "$child_pid" ]] || continue
+    terminate_process_tree "$child_pid" "$signal"
+  done < <(pgrep -P "$pid" 2>/dev/null || true)
+
+  kill -"$signal" "$pid" >/dev/null 2>&1 || true
 }
