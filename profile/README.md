@@ -52,10 +52,10 @@ The central contract files are under:
 
 ## Sample Usage
 
-Run loop tests for all specs from root:
+Run loop tests for one project:
 
 ```bash
-./loop-test.sh
+./loop-test.sh pricing-service
 ```
 
 Run self loop test for one project:

@@ -1,12 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONTRACTS_DIR="."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./specmatic-loop-common.sh
 source "${SCRIPT_DIR}/specmatic-loop-common.sh"
 
-PROJECT_DIR="$(pwd)"
+if [[ $# -ne 1 ]]; then
+  echo "Usage: $0 <project-dir>" >&2
+  exit 1
+fi
+
+PROJECT_DIR="$(cd "$1" && pwd)"
+if [[ ! -f "${PROJECT_DIR}/specmatic.yaml" ]]; then
+  echo "specmatic.yaml not found in ${PROJECT_DIR}" >&2
+  exit 1
+fi
+
+cd "${PROJECT_DIR}"
+CONTRACTS_DIR="."
 PROJECT_REPO_URL="$(git -C "$PROJECT_DIR" config --get remote.origin.url | sed -E 's#^git@github.com:#https://github.com/#; s#\.git$##')"
 PROJECT_REPO_SLUG="${PROJECT_REPO_URL#https://github.com/}"
 export SPECMATIC_REPO_ID="$(gh api "repos/${PROJECT_REPO_SLUG}" --jq .id)"
