@@ -22,7 +22,7 @@ run_project_script_from_dir() {
   local repo_url
   local repo_slug
   local repo_id
-  repo_url="$(git -C "${project_path}" config --get remote.origin.url | sed -E 's#^git@github.com:#https://github.com/#; s#\\.git$##')"
+  repo_url="$(git -C "${project_path}" config --get remote.origin.url | sed -E 's#^git@github.com:#https://github.com/#; s#\.git$##')"
   repo_slug="${repo_url#https://github.com/}"
   repo_id="$(gh api "repos/${repo_slug}" --jq .id)"
 
