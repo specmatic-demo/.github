@@ -19,6 +19,17 @@ fi
 PROJECT_DIR="$(cd "$PROJECT_ARG" && pwd)"
 PROJECT_NAME="$(basename "$PROJECT_DIR")"
 
+PROJECT_REPO_URL="$(git -C "$PROJECT_DIR" config --get remote.origin.url | sed -E 's#^git@github.com:#https://github.com/#; s#\.git$##')"
+PROJECT_REPO_SLUG="${PROJECT_REPO_URL#https://github.com/}"
+export SPECMATIC_REPO_ID="$(gh api "repos/${PROJECT_REPO_SLUG}" --jq .id)"
+export SPECMATIC_REPO_NAME="${PROJECT_REPO_SLUG##*/}"
+export SPECMATIC_REPO_URL="${PROJECT_REPO_URL}"
+export SPECMATIC_BUILD_ID="${SPECMATIC_BUILD_ID:-${GITHUB_RUN_ID:-local-service-test}}"
+export SPECMATIC_BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-main}}"
+export SPECMATIC_RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-1}"
+
+echo "Repository identity: ${SPECMATIC_REPO_NAME} (${SPECMATIC_REPO_URL}, ${SPECMATIC_REPO_ID})"
+
 if [[ ! -f "$PROJECT_DIR/specmatic.yaml" ]]; then
   echo "specmatic.yaml not found in $PROJECT_DIR" >&2
   exit 1
