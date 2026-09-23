@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: true
+      skip_specmatic_tests:
+        description: Start dependency mocks but skip Specmatic test execution
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   run-specmatic:
@@ -53,5 +58,6 @@ jobs:
         if: inputs.run_project_tests
         env:
           GH_TOKEN: ${{ github.token }}
+          SPECMATIC_SKIP_TESTS: ${{ inputs.skip_specmatic_tests }}
         run: |
           bash .specmatic-shared/project-self-loop-test.sh "$GITHUB_WORKSPACE"
