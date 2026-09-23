@@ -141,7 +141,10 @@ else
 fi
 
 echo "${C_BLUE}Running test from ${PROJECT_DIR}/specmatic.yaml${C_RESET}"
-if "${SPECMATIC_CMD[@]}" test 2>&1 | prefix_output "$C_BLUE" "test"; then
+if [[ "${SPECMATIC_SKIP_TESTS:-false}" == "true" ]]; then
+  echo "${C_YELLOW}SPECMATIC_SKIP_TESTS=true; skipping Specmatic test and retaining mock report generation${C_RESET}"
+  test_exit=0
+elif "${SPECMATIC_CMD[@]}" test 2>&1 | prefix_output "$C_BLUE" "test"; then
   echo "${C_GREEN}RESULT: PASS (${PROJECT_NAME}: ${PROJECT_DIR})${C_RESET}"
   test_exit=0
 else
